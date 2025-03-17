@@ -32,7 +32,7 @@ class TestExample(DbTest):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql)
             organizations = cur.fetchall()
-            
+
             assert len(organizations) == 7
 
     @dbconnect
@@ -43,6 +43,16 @@ class TestExample(DbTest):
         )
 
         sql = """
+        SELECT
+            COUNT(cust.customer_organization_id) AS subordinates_count,
+            org.id
+        FROM
+            organizations org
+            LEFT JOIN enterprise_sales_enterprise_customers cust ON org.id = cust.sales_organization_id
+        GROUP BY
+            org.id
+        ORDER BY
+            org.id;
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql)
@@ -88,6 +98,15 @@ class TestExample(DbTest):
         )
 
         sql = """
+        SELECT
+            id,
+            ST_X (ST_Centroid (bounds)) AS longitude,
+            ST_Y (ST_Centroid (bounds)) AS latitude
+        FROM
+            japan_segments
+        ORDER BY
+            SPLIT_PART (id, '_', 1),
+            CAST(SPLIT_PART (id, '_', 2) AS INTEGER);
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql)
@@ -155,6 +174,31 @@ class TestExample(DbTest):
         )
 
         sql = """
+        SELECT
+            id
+        FROM
+            japan_segments
+        WHERE
+            ST_Intersects (
+                bounds,
+                ST_SetSRID (
+                    ST_GeomFromGeoJSON (
+                        '{
+                            "type": "Polygon",
+                            "coordinates": [[
+                                [130.6, 30.6],
+                                [130.8, 30.6],
+                                [130.8, 30.8],
+                                [130.6, 30.8],
+                                [130.6, 30.6]
+                            ]]
+                        }'
+                    ),
+                    4326
+                )
+            )
+        ORDER BY
+            id;
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql)
